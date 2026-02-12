@@ -46,3 +46,45 @@ def insert_sample_endpoint():
     conn.close()
 
     return {"message": "Sample data inserted!"}
+
+import requests
+import xml.etree.ElementTree as ET
+
+@app.get("/sync/laws")
+def sync_laws_from_parliament():
+    url = "https://www.hellenicparliament.gr/OpenData/Laws"
+    response = requests.get(url)
+
+    root = ET.fromstring(response.content)
+
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    count = 0
+
+    for law in root.findall(".//Law"):
+        title = law.findtext("Title")
+        submission_date = law.findtext("SubmissionDate")
+        ministry = law.findtext("Ministry")
+        external_id = law.findtext("Id")
+
+        cursor.execute("""
+        INSERT OR IGNORE INTO laws
+        (external_id, title, submission_date, ministry, source, last_synced)
+        VALUES (?, ?, ?, ?, ?, ?)
+        """, (
+            external_id,
+            title,
+            submission_date,
+            ministry,
+            "hellenic_parliament",
+            datetime.now().isoformat()
+        ))
+
+        count += 1
+
+    conn.commit()
+    conn.close()
+
+    return {"imported": count}
+
