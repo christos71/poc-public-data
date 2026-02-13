@@ -15,12 +15,21 @@ def get_law(lawnum: int):
         "lawnum": lawnum
     }
 
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+        "Accept": "application/json,text/plain,*/*",
+        "Referer": "https://www.hellenicparliament.gr/"
+    }
+
     try:
-        response = requests.get(url, params=params, timeout=10)
+        response = requests.get(
+            url,
+            params=params,
+            headers=headers,
+            timeout=10
+        )
         response.raise_for_status()
     except requests.RequestException as e:
         raise HTTPException(status_code=502, detail=str(e))
 
     return response.json()
-
-
